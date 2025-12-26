@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export const ChatAgentes = () => {
     const [prompt, setPrompt] = useState('');
@@ -17,26 +19,51 @@ export const ChatAgentes = () => {
             agente2: null
         };
 
-        setRespuestas([...respuestas, nuevoMensajeUsuario]);
+        setRespuestas(prev => [...prev, nuevoMensajeUsuario]);
 
         const promptEnviado = prompt;
         setPrompt('');
 
-        setTimeout(() => {
+        try {
+            const response = await fetch('http://localhost:8000/api/v1/agentes/consulta', {
+                method: 'POST',
+
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+
+                body: JSON.stringify({
+                    user_id: "usuario_por_defecto",
+                    consulta: promptEnviado
+                })
+            }
+            );
+
+            if (!response.ok) {
+                throw new Error('Error en la respuesta del servidor');
+            }
+
+            const data = await response.json();
+
             setRespuestas(prev => {
                 const actualizadas = [...prev];
                 const ultimoIndex = actualizadas.length - 1;
+
                 actualizadas[ultimoIndex] = {
                     ...actualizadas[ultimoIndex],
-                    agente1: "Hola, soy tu Agente 1. He analizado tu prompt: " + promptEnviado,
-                    agente2: "Y yo soy el Agente 2. Complemento la respuesta desde otra perspectiva."
+                    agente1: data.ciberseguridad_reporte,
+                    agente2: data.software_reporte
                 };
+
                 return actualizadas;
             });
 
-            // 3. Apagamos el loading
+        } catch (error) {
+            console.error(error);
+            alert('Error al enviar la consulta a los agentes');
+        } finally {
             setIsLoading(false);
-        }, 2000); // Simulamos 2 segundos de espera
+        }
     };
 
     return (
@@ -70,7 +97,11 @@ export const ChatAgentes = () => {
                                 <div className="p-3 bg-white border rounded-3 shadow-sm h-100">
                                     <strong className="text-info small d-block mb-1">Agente especialista en ciberseguridad</strong>
                                     {item.agente1 ? (
-                                        <p className="mb-0 small">{item.agente1}</p>
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            className="mb-0 small">
+                                            {item.agente1}
+                                        </ReactMarkdown>
                                     ) : (
                                         <div className="placeholder-glow">
                                             <span className="placeholder col-12"></span>
@@ -85,7 +116,11 @@ export const ChatAgentes = () => {
                                 <div className="p-3 bg-white border rounded-3 shadow-sm h-100">
                                     <strong className="text-warning small d-block mb-1">Agente especialista en desarrollo de software</strong>
                                     {item.agente2 ? (
-                                        <p className="mb-0 small">{item.agente2}</p>
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            className="mb-0 small">
+                                            {item.agente2}
+                                        </ReactMarkdown>
                                     ) : (
                                         <div className="placeholder-glow">
                                             <span className="placeholder col-12"></span>
