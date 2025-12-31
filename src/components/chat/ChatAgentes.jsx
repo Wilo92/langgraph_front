@@ -2,7 +2,7 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-export const ChatAgentes = () => {
+export const ChatAgentes = ({ token }) => {
     const [prompt, setPrompt] = useState('');
     const [respuestas, setRespuestas] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -10,6 +10,11 @@ export const ChatAgentes = () => {
     const handleEnviar = async (e) => {
         e.preventDefault();
         if (!prompt.trim() || isLoading) return;
+
+        if (!token) {
+            alert('no tienes una sesion activa por favor inicia sesion en WiloLink e intenta de nuevo.');
+            return;
+        }
 
         setIsLoading(true);
 
@@ -26,15 +31,16 @@ export const ChatAgentes = () => {
 
         try {
             const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-            const response= await fetch(`${baseUrl}/api/v1/agentes/consulta`, {
+            const response = await fetch(`${baseUrl}/api/v1/agentes/consulta`, {
                 method: 'POST',
 
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
 
                 body: JSON.stringify({
-                    user_id: "usuario_por_defecto",
+                    user_id: "usuario_autenticado",
                     consulta: promptEnviado
                 })
             }
